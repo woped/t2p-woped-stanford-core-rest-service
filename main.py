@@ -30,8 +30,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(response.getvalue())
 
 
-pathname1 = os.path.join("jars", "stanford-corenlp-4.2.2.jar")
-pathname2 = os.path.join("jars", "stanford-corenlp-4.2.2-models.jar")
+pathname1 = os.path.join("jars/stanford-corenlp-4.2.2", "stanford-corenlp-4.2.2.jar")
+pathname2 = os.path.join("jars/stanford-corenlp-4.2.2", "stanford-corenlp-4.2.2-models.jar")
 nlpServer = CoreNLPServer(path_to_jar=pathname1,
                           path_to_models_jar=pathname2,
                           port=9000)
