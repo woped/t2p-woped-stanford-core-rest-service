@@ -7,7 +7,7 @@ RUN apt-get update && \
     apt-get clean;
 
 RUN mkdir /jars
-RUN cd /jars; wget http://nlp.stanford.edu/software/stanford-corenlp-4.2.2.zip
+RUN cd /jars; wget http://nlp.stanford.edu/software/stanford-corenlp-latest.zip
 RUN cd /jars; unzip stanford-corenlp-latest.zip
 COPY . .
 CMD [ "python", "main.py" ]
