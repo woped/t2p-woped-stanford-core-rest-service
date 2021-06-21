@@ -30,8 +30,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(response.getvalue())
 
 
-pathname1 = os.path.join("jars", "stanford-corenlp-4.2.1.jar")
-pathname2 = os.path.join("jars", "stanford-corenlp-4.2.1-models.jar")
+pathname1 = os.path.join("jars", "stanford-corenlp-4.2.2.jar")
+pathname2 = os.path.join("jars", "stanford-corenlp-4.2.2-models.jar")
 nlpServer = CoreNLPServer(path_to_jar=pathname1,
                           path_to_models_jar=pathname2,
                           port=9000)
@@ -49,7 +49,7 @@ if is_port_in_use(9000) is False:
 
 
 def run(server_class=HTTPServer, handler_class=Handler):
-    server_address = ('', 8000)
+    server_address = ('', 80)
     httpd = server_class(server_address, handler_class)
     httpd.serve_forever()
 
