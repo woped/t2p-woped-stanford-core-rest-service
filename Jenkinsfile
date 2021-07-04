@@ -34,13 +34,11 @@ pipeline {
 }
 
 def getVersion() {
-    pom = readMavenPom file: 'pom.xml'
-    return pom.version
+    return '0.1'
 }
 
 def getDockerVersion() {
-    pom = readMavenPom file: 'pom.xml'
-    version = pom.version
+    version = '0.1'
 
     if(version.toString().contains('SNAPSHOT')) {
         return version + '-' + "${currentBuild.startTimeInMillis}"
