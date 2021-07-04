@@ -19,11 +19,13 @@ pipeline {
         }
         stage('build docker') {
             steps {
+                script {
                         docker.withRegistry('https://registry.hub.docker.com/v1/repositories/woped', registryCredential) {
                             def dockerImage = docker.build("woped/text2process-stanford:$DOCKER_VERSION")
                             def dockerImageLatest = docker.build("woped/text2process-stanford:latest")
                             dockerImage.push();
                             dockerImageLatest.push();
+                        }
                 }
             }
         }
