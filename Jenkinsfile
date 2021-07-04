@@ -20,6 +20,9 @@ pipeline {
     }
 
     post {
+        always {
+            cleanWs()
+        }
         success {
             setBuildStatus("Build succeeded", "SUCCESS");
         }
