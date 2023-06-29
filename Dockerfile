@@ -6,8 +6,11 @@ RUN apt-get update && \
     apt-get install -y unzip && \
     apt-get clean;
 
-RUN mkdir /jars
-RUN cd /jars; wget http://nlp.stanford.edu/software/stanford-corenlp-latest.zip
-RUN cd /jars; unzip stanford-corenlp-latest.zip
 COPY . .
+
+RUN rm /Dockerfile; rm /Jenkinsfile;
+
+RUN cd /jars; wget http://nlp.stanford.edu/software/stanford-corenlp-latest.zip; exit 0; 
+RUN if [ -e stanford-corenlp-latest.zip ]; then cd /jars; rm -Rf stanford-corenlp-4.2.2; unzip stanford-corenlp-latest.zip; rm stanford-corenlp-latest.zip; fi
+
 CMD [ "python", "main.py" ]
