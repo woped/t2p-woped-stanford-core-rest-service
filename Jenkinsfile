@@ -30,9 +30,9 @@ pipeline {
             }
         }
 
-        stage('deploy when master') {
+        stage('deploy when main') {
 
-            when { branch 'master' }
+            when { branch 'main' }
 
             steps {
                 script {
@@ -80,11 +80,11 @@ pipeline {
 }
 
 def getVersion() {
-    return '3.8.0-SNAPSHOT'
+    return '3.8.1-SNAPSHOT'
 }
 
 def getDockerVersion() {
-    version = '3.8.0-SNAPSHOT'
+    version = '3.8.1-SNAPSHOT'
 
     if(version.toString().contains('SNAPSHOT')) {
         return version + '-' + "${currentBuild.startTimeInMillis}"
