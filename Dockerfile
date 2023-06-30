@@ -1,14 +1,12 @@
-FROM python:3.9.5
-COPY requirements.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-RUN apt-get update && \
-    apt-get install -y openjdk-11-jre-headless && \
-    apt-get install -y unzip && \
-    apt-get clean;
+FROM python:3.11.4-alpine
 
 COPY . .
 
-RUN rm /Dockerfile; rm /Jenkinsfile;
+RUN pip install --no-cache-dir -r requirements.txt
+
+RUN apk update;
+RUN apk add unzip;
+RUN apk add openjdk11-jre-headless;
 
 RUN cd /jars; wget http://nlp.stanford.edu/software/stanford-corenlp-latest.zip; if ["$?"!="0"]; then rm stanford-corenlp-latest.zip; fi; exit 0; 
 
