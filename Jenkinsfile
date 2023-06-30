@@ -80,11 +80,11 @@ pipeline {
 }
 
 def getVersion() {
-    return '3.8.1-SNAPSHOT'
+    return '3.11.4-SNAPSHOT'
 }
 
 def getDockerVersion() {
-    version = '3.8.1-SNAPSHOT'
+    version = '3.11.4-SNAPSHOT'
 
     if(version.toString().contains('SNAPSHOT')) {
         return version + '-' + "${currentBuild.startTimeInMillis}"
