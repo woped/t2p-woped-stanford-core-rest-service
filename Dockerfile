@@ -10,7 +10,8 @@ COPY . .
 
 RUN rm /Dockerfile; rm /Jenkinsfile;
 
-RUN cd /jars; wget http://nlp.stanford.edu/software/stanford-corenlp-latest.zip; exit 0; 
-RUN cd /jars; if [ -e stanford-corenlp-latest.zip ]; then rm -rf stanford-corenlp-4.2.2; unzip stanford-corenlp-latest.zip; rm -f stanford-corenlp-latest.zip; fi
+RUN cd /jars; wget http://nlp.stanford.edu/software/stanford-corenlp-latest.zip; if ["$?"!="0"]; then rm stanford-corenlp-latest.zip; fi; exit 0; 
+
+RUN cd /jars; if [ -e stanford-corenlp-latest.zip ]; then unzip stanford-corenlp-latest.zip; rm stanford-corenlp-latest.zip; fi
 
 CMD [ "python", "main.py" ]

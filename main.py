@@ -7,7 +7,6 @@ from io import BytesIO
 from nltk.parse.corenlp import CoreNLPParser
 from nltk.parse.corenlp import CoreNLPServer
 
-
 class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
@@ -30,6 +29,15 @@ class Handler(BaseHTTPRequestHandler):
         response.write(str.encode(ret))
         self.wfile.write(response.getvalue())
 
+def is_port_in_use(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
+def run(server_class=HTTPServer, handler_class=Handler):
+    server_address = ('', 8083)
+    httpd = server_class(server_address, handler_class)
+    httpd.serve_forever()
+
 jar_path = "/jars"
 stanford_jar_pattern = r'^stanford\-corenlp\-\d+\.\d+\.\d+\.jar$'
 stanford_models_pattern = r'^stanford\-corenlp\-\d+\.\d+\.\d+\-models\.jar$'
@@ -37,7 +45,10 @@ stanford_models_pattern = r'^stanford\-corenlp\-\d+\.\d+\.\d+\-models\.jar$'
 pathname1 = ""
 pathname2 = ""
 
+print(os.listdir(jar_path))
+
 for path in os.scandir(jar_path):
+    print("jars-dir content: " + path.path)
     if path.is_dir and not re.match("^.*\.zip$", path.name):
         print ("The path.name is " + path.name)
         for file in os.scandir(path.path):
@@ -49,23 +60,17 @@ for path in os.scandir(jar_path):
                 if re.match(stanford_models_pattern, file.name):
                     print ("Setting pathname2")
                     pathname2 = file.path
-            
+
+print ("pathname1: <" + pathname1 + ">")
+print ("pathname2: <" + pathname2 + ">")
+
 nlpServer = CoreNLPServer(path_to_jar=pathname1,
                           path_to_models_jar=pathname2,
                           port=9000)
-
-def is_port_in_use(port):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('localhost', port)) == 0
 
 nlpParser = CoreNLPParser(url="http://localhost:9000")
 
 if is_port_in_use(9000) is False:
     nlpServer.start()
-
-def run(server_class=HTTPServer, handler_class=Handler):
-    server_address = ('', 8083)
-    httpd = server_class(server_address, handler_class)
-    httpd.serve_forever()
-
 run()
+
