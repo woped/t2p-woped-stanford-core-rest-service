@@ -1,4 +1,7 @@
+/venv
 Dockerfile
 Jenkinsfile
 .gitattributes
 .dockerignore
+.gitignore
+README.md
