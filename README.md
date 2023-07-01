@@ -17,9 +17,11 @@ Python Code for using current Stanford CoreNLP
 | https://hub.docker.com/r/woped/text2process-stanford |
 
 <h1>2. Functionality</h1>
+
 <h2>API</h2>
+
 It is build as a ReST-API for this is the common ground for application communication these days. The following path can be used to get information from the stanford-corenlp-rest-service. 
 
-| Host:Port | Path | Headers | Params |
-|:----------|:-----|:--------|:-------|
-| https://woped.dhbw-karlsruhe.de:9000 | / | - | text/plain |
+| Host:Port | Path | Method | Headers | Params |
+|:----------|:-----|:------:|:--------|:-------|
+| https://woped.dhbw-karlsruhe.de:8083 | GET | / | - | - |
