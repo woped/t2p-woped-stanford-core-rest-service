@@ -8,8 +8,12 @@ Python Code for using current Stanford CoreNLP
 
 <h1>1. General Information</h1>
 
-| Dockerhub |
-|:---------:|
+| <h2>Github</h2> |
+|:---------|
+| https://github.com/woped/woped-stanford-core-rest-service |
+
+| <h2>Dockerhub</h2> |
+|:---------|
 | https://hub.docker.com/r/woped/text2process-stanford |
 
 <h1>2. Functionality</h1>
