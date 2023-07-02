@@ -1,11 +1,15 @@
 import os
 import socket
 import re
+import logging
+
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import BytesIO
 
 from nltk.parse.corenlp import CoreNLPParser
 from nltk.parse.corenlp import CoreNLPServer
+
+logging.basicConfig(level=logging.INFO)
 
 class Handler(BaseHTTPRequestHandler):
 
@@ -25,7 +29,7 @@ class Handler(BaseHTTPRequestHandler):
         ret = ""
         for elem in body:
             ret = ret + str(elem)
-        print(ret)
+        logging.info(ret)
         response.write(str.encode(ret))
         self.wfile.write(response.getvalue())
 
@@ -45,24 +49,24 @@ stanford_models_pattern = r'^stanford\-corenlp\-\d+\.\d+\.\d+\-models\.jar$'
 pathname1 = ""
 pathname2 = ""
 
-print(os.listdir(jar_path))
+logging.debug(os.listdir(jar_path))
 
 for path in os.scandir(jar_path):
-    print("jars-dir content: " + path.path)
+    logging.debug("jars-dir content: " + path.path)
     if path.is_dir and not re.match("^.*\.zip$", path.name):
-        print ("The path.name is " + path.name)
+        logging.debug ("The path.name is " + path.name)
         for file in os.scandir(path.path):
             if file.is_file:
-                print ("The file.name is " + file.name)
+                logging.debug ("The file.name is " + file.name)
                 if re.match(stanford_jar_pattern, file.name):
-                    print ("Setting pathname1")
+                    logging.debug ("Setting pathname1")
                     pathname1 = file.path
                 if re.match(stanford_models_pattern, file.name):
-                    print ("Setting pathname2")
+                    logging.debug ("Setting pathname2")
                     pathname2 = file.path
 
-print ("pathname1: <" + pathname1 + ">")
-print ("pathname2: <" + pathname2 + ">")
+logging.info ("pathname1: <" + pathname1 + ">")
+logging.info ("pathname2: <" + pathname2 + ">")
 
 nlpServer = CoreNLPServer(path_to_jar=pathname1,
                           path_to_models_jar=pathname2,
