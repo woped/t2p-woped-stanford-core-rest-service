@@ -27,3 +27,4 @@ It is build as a ReST-API for this is the common ground for application communic
 | Host:Port | Path | Method | Headers | Params |
 |:----------|:-----|:------:|:--------|:-------|
 | https://woped.dhbw-karlsruhe.de:8083 | GET | / | - | - |
+| https://woped.dhbw-karlsruhe.de:8083 | POST | / | - | - |
