@@ -14,7 +14,7 @@ Python Code for using current Stanford CoreNLP
 
 | <h2>Dockerhub</h2> |
 |:---------|
-| https://hub.docker.com/r/woped/text2process-stanford |
+| https://hub.docker.com/r/woped/stanford-corenlp-microservice |
 
 This Projekt is part of CD-CI-Pipeline
 
