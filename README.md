@@ -1,8 +1,8 @@
 # woped-stanford-core-rest-service
 Python Code for using current Stanford CoreNLP
 
-|Table of content |
-| :---- |
+| Table of content |
+| :--------------- |
 | 1.General Information |
 | 2.Functionality |
 
@@ -15,6 +15,8 @@ Python Code for using current Stanford CoreNLP
 | <h2>Dockerhub</h2> |
 |:---------|
 | https://hub.docker.com/r/woped/text2process-stanford |
+
+This Projekt is part of CD-CI-Pipeline
 
 <h1>2. Functionality</h1>
 
