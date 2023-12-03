@@ -9,7 +9,7 @@ on:
 env:
   MAJOR_VERSION: 3
   MINOR_VERSION: 11
-  MICRO_VERSION: 4
+  MICRO_VERSION: 5
 
 jobs:
   build:
