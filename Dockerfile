@@ -9,7 +9,7 @@ RUN apk update;
 RUN apk add unzip;
 RUN apk add openjdk11-jre-headless;
 
-RUN cd /jars; wget http://nlp.stanford.edu/software/stanford-corenlp-latest.zip; \
+RUN cd /jars; wget https://nlp.stanford.edu/software/stanford-corenlp-4.5.5.zip; \
     if ["$?"!="0"]; \
     then rm stanford-corenlp-latest.zip; \
     else rm /jars/stanford-corenlp-4.2.2/; \
