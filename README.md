@@ -6,6 +6,8 @@ Python Code for using current Stanford CoreNLP
 | 1.General Information |
 | 2.Functionality |
 
+After cloning this repository, it's essential to [set up git hooks](https://github.com/woped/woped-git-hooks/blob/main/README.md#activating-git-hooks-after-cloning-a-repository) to ensure project standards.
+
 <h1>1. General Information</h1>
 
 | <h2>Github</h2> |
