@@ -15,4 +15,8 @@ RUN cd /jars; wget https://nlp.stanford.edu/software/stanford-corenlp-4.2.2.zip;
 
 RUN cd /jars; if [ -e stanford-corenlp-4.2.2.zip ]; then unzip stanford-corenlp-4.2.2.zip; fi
 
+# Create logs directory and set permissions
+RUN mkdir -p /logs && \
+    chmod 777 /logs
+
 CMD [ "python", "main.py" ]
