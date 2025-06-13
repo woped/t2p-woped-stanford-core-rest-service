@@ -2,36 +2,124 @@ import os
 import socket
 import re
 import logging
-
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import BytesIO
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from pythonjsonlogger import jsonlogger
 
 from nltk.parse.corenlp import CoreNLPParser
 from nltk.parse.corenlp import CoreNLPServer
 
-logging.basicConfig(level=logging.INFO)
+# Prometheus Metriken
+REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'status'])
+REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP request latency', ['method', 'endpoint'])
+PARSE_DURATION = Histogram('parse_duration_seconds', 'Time taken to parse text')
+
+# Logging Setup
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+# Console handler
+console_handler = logging.StreamHandler()
+console_formatter = jsonlogger.JsonFormatter(
+    '%(asctime)s %(levelname)s %(name)s %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+console_handler.setFormatter(console_formatter)
+logger.addHandler(console_handler)
+
+# File handler for Promtail
+try:
+    log_dir = '/logs' 
+    print(f"Creating log directory at: {log_dir}")
+    os.makedirs(log_dir, exist_ok=True)
+    
+    log_file = os.path.join(log_dir, 'application.log')
+    print(f"Creating log file at: {log_file}")
+    
+    file_handler = logging.FileHandler(log_file)
+    file_formatter = jsonlogger.JsonFormatter(
+        '%(asctime)s %(levelname)s %(name)s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    file_handler.setFormatter(file_formatter)
+    logger.addHandler(file_handler)
+    
+    logger.info("Logging setup completed successfully")
+except Exception as e:
+    print(f"Error setting up file logging: {str(e)}")
+    logger.error(f"Error setting up file logging: {str(e)}")
 
 class Handler(BaseHTTPRequestHandler):
-
     def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b'Service to create a tree from a single sentence')
+        start_time = time.time()
+        try:
+            if self.path == '/metrics':
+                self.send_response(200)
+                self.send_header('Content-Type', CONTENT_TYPE_LATEST)
+                self.end_headers()
+                self.wfile.write(generate_latest())
+                REQUEST_COUNT.labels(method='GET', endpoint='/metrics', status='200').inc()
+            elif self.path == '/test-success':
+                logger.info("Test success endpoint called")
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                response = {"status": "success", "message": "Test successful"}
+                self.wfile.write(str.encode(str(response)))
+                REQUEST_COUNT.labels(method='GET', endpoint='/test-success', status='200').inc()
+            elif self.path == '/test-error':
+                logger.error("Test error endpoint called - generating 500 error")
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                response = {"status": "error", "message": "Test error response"}
+                self.wfile.write(str.encode(str(response)))
+                REQUEST_COUNT.labels(method='GET', endpoint='/test-error', status='500').inc()
+            else:
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b'Service to create a tree from a single sentence')
+                REQUEST_COUNT.labels(method='GET', endpoint='/', status='200').inc()
+        except Exception as e:
+            logger.error("Error in GET request", extra={"error": str(e)})
+            REQUEST_COUNT.labels(method='GET', endpoint=self.path, status='500').inc()
+            self.send_error(500, str(e))
+        finally:
+            REQUEST_LATENCY.labels(method='GET', endpoint=self.path).observe(time.time() - start_time)
 
     def do_POST(self):
-        content_length = int(self.headers['Content-Length'])
-        body = self.rfile.read(content_length)
-        self.send_response(200)
-        self.end_headers()
-        response = BytesIO()
-        body = body.decode("utf-8")
-        body = nlpParser.parse(body.split())
-        ret = ""
-        for elem in body:
-            ret = ret + str(elem)
-        logging.info(ret)
-        response.write(str.encode(ret))
-        self.wfile.write(response.getvalue())
+        start_time = time.time()
+        try:
+            content_length = int(self.headers['Content-Length'])
+            body = self.rfile.read(content_length)
+            body = body.decode("utf-8")
+            
+            logger.info("Received POST request with text", extra={"text": body})
+            
+            parse_start_time = time.time()
+            parsed_body = nlpParser.parse(body.split())
+            PARSE_DURATION.observe(time.time() - parse_start_time)
+            
+            ret = ""
+            for elem in parsed_body:
+                ret = ret + str(elem)
+            
+            logger.info("Parsing result", extra={"result": ret})
+            
+            self.send_response(200)
+            self.end_headers()
+            response = BytesIO()
+            response.write(str.encode(ret))
+            self.wfile.write(response.getvalue())
+            REQUEST_COUNT.labels(method='POST', endpoint='/', status='200').inc()
+        except Exception as e:
+            logger.error("Error in POST request", extra={"error": str(e)})
+            REQUEST_COUNT.labels(method='POST', endpoint='/', status='500').inc()
+            self.send_error(500, str(e))
+        finally:
+            REQUEST_LATENCY.labels(method='POST', endpoint='/').observe(time.time() - start_time)
 
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -40,6 +128,7 @@ def is_port_in_use(port):
 def run(server_class=HTTPServer, handler_class=Handler):
     server_address = ('', 8083)
     httpd = server_class(server_address, handler_class)
+    logger.info("Starting server on port 8083")
     httpd.serve_forever()
 
 jar_path = "/jars"
@@ -49,32 +138,36 @@ stanford_models_pattern = r'^stanford\-corenlp\-\d+\.\d+\.\d+\-models\.jar$'
 pathname1 = ""
 pathname2 = ""
 
-logging.debug(os.listdir(jar_path))
+logger.debug("JAR directory contents: %s", os.listdir(jar_path))
 
 for path in os.scandir(jar_path):
-    logging.debug("jars-dir content: " + path.path)
+    logger.debug("JAR directory content: %s", path.path)
     if path.is_dir and not re.match("^.*\.zip$", path.name):
-        logging.debug ("The path.name is " + path.name)
+        logger.debug("Directory name: %s", path.name)
         for file in os.scandir(path.path):
             if file.is_file:
-                logging.debug ("The file.name is " + file.name)
+                logger.debug("File name: %s", file.name)
                 if re.match(stanford_jar_pattern, file.name):
-                    logging.debug ("Setting pathname1")
+                    logger.debug("Setting pathname1 to: %s", file.path)
                     pathname1 = file.path
                 if re.match(stanford_models_pattern, file.name):
-                    logging.debug ("Setting pathname2")
+                    logger.debug("Setting pathname2 to: %s", file.path)
                     pathname2 = file.path
 
-logging.info ("pathname1: <" + pathname1 + ">")
-logging.info ("pathname2: <" + pathname2 + ">")
+logger.info("CoreNLP JAR path: %s", pathname1)
+logger.info("CoreNLP Models JAR path: %s", pathname2)
 
 nlpServer = CoreNLPServer(path_to_jar=pathname1,
-                          path_to_models_jar=pathname2,
-                          port=9000)
+                         path_to_models_jar=pathname2,
+                         port=9000)
 
 nlpParser = CoreNLPParser(url="http://localhost:9000")
 
 if is_port_in_use(9000) is False:
+    logger.info("Starting CoreNLP server on port 9000")
     nlpServer.start()
+else:
+    logger.warning("Port 9000 is already in use")
+
 run()
 
