@@ -7,6 +7,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import BytesIO
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from pythonjsonlogger import jsonlogger
+import sys
 
 from nltk.parse.corenlp import CoreNLPParser
 from nltk.parse.corenlp import CoreNLPServer
@@ -20,38 +21,24 @@ PARSE_DURATION = Histogram('parse_duration_seconds', 'Time taken to parse text')
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# Console handler
-console_handler = logging.StreamHandler()
-console_formatter = jsonlogger.JsonFormatter(
+# Stdout handler with JSON formatter
+stdout_handler = logging.StreamHandler(sys.stdout)
+stdout_formatter = jsonlogger.JsonFormatter(
     '%(asctime)s %(levelname)s %(name)s %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
-console_handler.setFormatter(console_formatter)
-logger.addHandler(console_handler)
+stdout_handler.setFormatter(stdout_formatter)
+logger.addHandler(stdout_handler)
 
-# File handler for Promtail
-try:
-    log_dir = '/logs' 
-    print(f"Creating log directory at: {log_dir}")
-    os.makedirs(log_dir, exist_ok=True)
-    
-    log_file = os.path.join(log_dir, 'application.log')
-    print(f"Creating log file at: {log_file}")
-    
-    file_handler = logging.FileHandler(log_file)
-    file_formatter = jsonlogger.JsonFormatter(
-        '%(asctime)s %(levelname)s %(name)s %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-    file_handler.setFormatter(file_formatter)
-    logger.addHandler(file_handler)
-    
-    logger.info("Logging setup completed successfully")
-except Exception as e:
-    print(f"Error setting up file logging: {str(e)}")
-    logger.error(f"Error setting up file logging: {str(e)}")
+logger.info("Logging setup completed successfully")
 
 class Handler(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        # Suppress logging for /metrics endpoint
+        if self.path == '/metrics':
+            return
+        super().log_message(format, *args)
+
     def do_GET(self):
         start_time = time.time()
         try:
@@ -83,7 +70,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(b'Service to create a tree from a single sentence')
                 REQUEST_COUNT.labels(method='GET', endpoint='/', status='200').inc()
         except Exception as e:
-            logger.error("Error in GET request", extra={"error": str(e)})
+            logger.error("Error in GET request: %s", str(e))
             REQUEST_COUNT.labels(method='GET', endpoint=self.path, status='500').inc()
             self.send_error(500, str(e))
         finally:
@@ -138,24 +125,57 @@ stanford_models_pattern = r'^stanford\-corenlp\-\d+\.\d+\.\d+\-models\.jar$'
 pathname1 = ""
 pathname2 = ""
 
-logger.debug("JAR directory contents: %s", os.listdir(jar_path))
+logger.info("Starting JAR search in directory: %s", jar_path)
 
-for path in os.scandir(jar_path):
-    logger.debug("JAR directory content: %s", path.path)
-    if path.is_dir and not re.match("^.*\.zip$", path.name):
-        logger.debug("Directory name: %s", path.name)
-        for file in os.scandir(path.path):
-            if file.is_file:
-                logger.debug("File name: %s", file.name)
-                if re.match(stanford_jar_pattern, file.name):
-                    logger.debug("Setting pathname1 to: %s", file.path)
-                    pathname1 = file.path
-                if re.match(stanford_models_pattern, file.name):
-                    logger.debug("Setting pathname2 to: %s", file.path)
-                    pathname2 = file.path
+if not os.path.exists(jar_path):
+    logger.error("JAR directory does not exist: %s", jar_path)
+    raise FileNotFoundError(f"JAR directory not found: {jar_path}")
+
+try:
+    # First, list all directories
+    jar_dirs = [d for d in os.listdir(jar_path) if os.path.isdir(os.path.join(jar_path, d))]
+    logger.info("Found directories in JAR directory: %s", jar_dirs)
+    
+    # Search in each directory
+    for dir_name in jar_dirs:
+        dir_path = os.path.join(jar_path, dir_name)
+        logger.info("Searching in directory: %s", dir_path)
+        
+        try:
+            files = os.listdir(dir_path)
+            logger.info("Files in directory %s: %s", dir_path, files)
+            
+            for file_name in files:
+                file_path = os.path.join(dir_path, file_name)
+                if os.path.isfile(file_path):
+                    logger.debug("Checking file: %s", file_path)
+                    if re.match(stanford_jar_pattern, file_name):
+                        logger.info("Found CoreNLP JAR: %s", file_path)
+                        pathname1 = file_path
+                    elif re.match(stanford_models_pattern, file_name):
+                        logger.info("Found CoreNLP Models JAR: %s", file_path)
+                        pathname2 = file_path
+        except Exception as e:
+            logger.error("Error reading directory %s", dir_path, extra={"error": str(e)})
+            continue
+except Exception as e:
+    logger.error("Error searching for JAR files", extra={"error": str(e)})
+    raise
+
+if not pathname1:
+    logger.error("Could not find CoreNLP JAR file")
+    raise FileNotFoundError("CoreNLP JAR file not found")
+if not pathname2:
+    logger.error("Could not find CoreNLP Models JAR file")
+    raise FileNotFoundError("CoreNLP Models JAR file not found")
 
 logger.info("CoreNLP JAR path: %s", pathname1)
 logger.info("CoreNLP Models JAR path: %s", pathname2)
+
+if is_port_in_use(9000):
+    logger.warning("Port 9000 is already in use")
+else:
+    logger.info("Port 9000 is available")
 
 nlpServer = CoreNLPServer(path_to_jar=pathname1,
                          path_to_models_jar=pathname2,
@@ -163,7 +183,7 @@ nlpServer = CoreNLPServer(path_to_jar=pathname1,
 
 nlpParser = CoreNLPParser(url="http://localhost:9000")
 
-if is_port_in_use(9000) is False:
+if not is_port_in_use(9000):
     logger.info("Starting CoreNLP server on port 9000")
     nlpServer.start()
 else:
