@@ -14,8 +14,4 @@ RUN mkdir -p /jars && \
     unzip stanford-corenlp-4.2.2.zip && \
     rm stanford-corenlp-4.2.2.zip
 
-#Create logs directory and set permissions
-RUN mkdir -p /logs && \
-    chmod 777 /logs
-
 CMD [ "python", "main.py" ]
