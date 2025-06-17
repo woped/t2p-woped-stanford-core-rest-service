@@ -13,9 +13,9 @@ from nltk.parse.corenlp import CoreNLPParser
 from nltk.parse.corenlp import CoreNLPServer
 
 # Prometheus Metriken
-REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'status'])
-REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP request latency', ['method', 'endpoint'])
-PARSE_DURATION = Histogram('parse_duration_seconds', 'Time taken to parse text')
+REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'status', 'job'])
+REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP request latency', ['method', 'endpoint', 'job'])
+PARSE_DURATION = Histogram('parse_duration_seconds', 'Time taken to parse text', ['job'])
 
 # Logging Setup
 logger = logging.getLogger()
@@ -47,7 +47,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Content-Type', CONTENT_TYPE_LATEST)
                 self.end_headers()
                 self.wfile.write(generate_latest())
-                REQUEST_COUNT.labels(method='GET', endpoint='/metrics', status='200').inc()
+                REQUEST_COUNT.labels(method='GET', endpoint='/metrics', status='200', job='t2p-woped-stanford-core-rest-service').inc()
             elif self.path == '/test-success':
                 logger.info("Test success endpoint called")
                 self.send_response(200)
@@ -55,7 +55,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 response = {"status": "success", "message": "Test successful"}
                 self.wfile.write(str.encode(str(response)))
-                REQUEST_COUNT.labels(method='GET', endpoint='/test-success', status='200').inc()
+                REQUEST_COUNT.labels(method='GET', endpoint='/test-success', status='200', job='t2p-woped-stanford-core-rest-service').inc()
             elif self.path == '/test-error':
                 logger.error("Test error endpoint called - generating 500 error")
                 self.send_response(500)
@@ -63,18 +63,18 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 response = {"status": "error", "message": "Test error response"}
                 self.wfile.write(str.encode(str(response)))
-                REQUEST_COUNT.labels(method='GET', endpoint='/test-error', status='500').inc()
+                REQUEST_COUNT.labels(method='GET', endpoint='/test-error', status='500', job='t2p-woped-stanford-core-rest-service').inc()
             else:
                 self.send_response(200)
                 self.end_headers()
                 self.wfile.write(b'Service to create a tree from a single sentence')
-                REQUEST_COUNT.labels(method='GET', endpoint='/', status='200').inc()
+                REQUEST_COUNT.labels(method='GET', endpoint='/', status='200', job='t2p-woped-stanford-core-rest-service').inc()
         except Exception as e:
             logger.error("Error in GET request: %s", str(e))
-            REQUEST_COUNT.labels(method='GET', endpoint=self.path, status='500').inc()
+            REQUEST_COUNT.labels(method='GET', endpoint=self.path, status='500', job='t2p-woped-stanford-core-rest-service').inc()
             self.send_error(500, str(e))
         finally:
-            REQUEST_LATENCY.labels(method='GET', endpoint=self.path).observe(time.time() - start_time)
+            REQUEST_LATENCY.labels(method='GET', endpoint=self.path, job='t2p-woped-stanford-core-rest-service').observe(time.time() - start_time)
 
     def do_POST(self):
         start_time = time.time()
@@ -87,7 +87,7 @@ class Handler(BaseHTTPRequestHandler):
             
             parse_start_time = time.time()
             parsed_body = nlpParser.parse(body.split())
-            PARSE_DURATION.observe(time.time() - parse_start_time)
+            PARSE_DURATION.labels(job='t2p-woped-stanford-core-rest-service').observe(time.time() - parse_start_time)
             
             ret = ""
             for elem in parsed_body:
@@ -100,13 +100,13 @@ class Handler(BaseHTTPRequestHandler):
             response = BytesIO()
             response.write(str.encode(ret))
             self.wfile.write(response.getvalue())
-            REQUEST_COUNT.labels(method='POST', endpoint='/', status='200').inc()
+            REQUEST_COUNT.labels(method='POST', endpoint='/', status='200', job='t2p-woped-stanford-core-rest-service').inc()
         except Exception as e:
             logger.error("Error in POST request", extra={"error": str(e)})
-            REQUEST_COUNT.labels(method='POST', endpoint='/', status='500').inc()
+            REQUEST_COUNT.labels(method='POST', endpoint='/', status='500', job='t2p-woped-stanford-core-rest-service').inc()
             self.send_error(500, str(e))
         finally:
-            REQUEST_LATENCY.labels(method='POST', endpoint='/').observe(time.time() - start_time)
+            REQUEST_LATENCY.labels(method='POST', endpoint='/', job='t2p-woped-stanford-core-rest-service').observe(time.time() - start_time)
 
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
