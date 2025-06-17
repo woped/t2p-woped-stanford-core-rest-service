@@ -5,14 +5,13 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN rm requirements.txt
 
-RUN apk update;
-RUN apk add unzip;
-RUN apk add openjdk11-jre-headless;
+RUN apk update && \
+    apk add unzip openjdk11-jre-headless wget
 
-RUN mkdir /jars
-
-RUN cd /jars; wget https://nlp.stanford.edu/software/stanford-corenlp-4.2.2.zip; \
-
-RUN cd /jars; if [ -e stanford-corenlp-4.2.2.zip ]; then unzip stanford-corenlp-4.2.2.zip; fi
+RUN mkdir -p /jars && \
+    cd /jars && \
+    wget --no-check-certificate https://nlp.stanford.edu/software/stanford-corenlp-4.2.2.zip && \
+    unzip stanford-corenlp-4.2.2.zip && \
+    rm stanford-corenlp-4.2.2.zip
 
 CMD [ "python", "main.py" ]
