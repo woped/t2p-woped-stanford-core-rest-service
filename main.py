@@ -39,6 +39,11 @@ class Handler(BaseHTTPRequestHandler):
             return
         super().log_message(format, *args)
 
+    def log_message(self, format, *args):
+        if self.path == '/metrics':
+            return
+        super().log_message(format, *args)
+
     def do_GET(self):
         start_time = time.time()
         try:
