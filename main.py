@@ -13,6 +13,11 @@ logging.basicConfig(level=logging.INFO)
 
 class Handler(BaseHTTPRequestHandler):
 
+    def log_message(self, format, *args):
+        if self.path == '/metrics':
+            return
+        super().log_message(format, *args)
+
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
