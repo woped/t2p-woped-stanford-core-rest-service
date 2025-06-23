@@ -18,7 +18,7 @@ After cloning this repository, it's essential to [set up git hooks](https://gith
 |:---------|
 | https://hub.docker.com/r/woped/stanford-corenlp-microservice |
 
-This Projekt is part of CD-CI-Pipeline
+This Projekt is part of CD-CI-Pipeline 
 
 <h1>2. Functionality</h1>
 
