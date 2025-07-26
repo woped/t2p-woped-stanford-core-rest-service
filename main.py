@@ -33,11 +33,7 @@ logger.addHandler(stdout_handler)
 logger.info("Logging setup completed successfully")
 
 class Handler(BaseHTTPRequestHandler):
-    def log_message(self, format, *args):
-        # Suppress logging for /metrics endpoint
-        if self.path == '/metrics':
-            return
-        super().log_message(format, *args)
+    
 
     def log_message(self, format, *args):
         if self.path == '/metrics':
